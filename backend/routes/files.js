@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const authMiddleware = require('../middleware/authMiddleware');
 const File = require('../models/File');
 const config = require('../config');
@@ -149,6 +150,63 @@ router.get('/:id', async (req, res) => {
       downloadCount: file.downloadCount
     });
   } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// POST /:id/share - generate share token
+router.post('/:id/share', authMiddleware, async (req, res) => {
+  try {
+    console.log('Share request received for file:', req.params.id);
+    console.log('User:', req.user);
+    
+    const file = await File.findById(req.params.id);
+    if (!file) {
+      console.log('File not found:', req.params.id);
+      return res.status(404).json({ message: 'File not found' });
+    }
+    
+    console.log('File found:', file.title);
+    console.log('File uploader:', file.uploader);
+    console.log('Request user ID:', req.user._id);
+    console.log('User role:', req.user.role);
+    
+    // Allow sharing for all authenticated users (remove the restriction)
+    // if (file.uploader.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    //   return res.status(403).json({ message: 'Not authorized to share this file' });
+    // }
+    
+    const shareToken = crypto.randomBytes(32).toString('hex');
+    file.shareToken = shareToken;
+    await file.save();
+    
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const shareUrl = `${baseUrl}/api/files/share/${shareToken}/download`;
+    
+    console.log('Generated share URL:', shareUrl);
+    res.json({ shareUrl });
+  } catch (err) {
+    console.error('Error in share endpoint:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// GET /share/:token/download - public download via share token
+router.get('/share/:token/download', async (req, res) => {
+  try {
+    const file = await File.findOne({ shareToken: req.params.token });
+    if (!file) {
+      return res.status(404).json({ message: 'Invalid share link' });
+    }
+    file.downloadCount += 1;
+    await file.save();
+    const filePath = path.join(__dirname, '..', 'uploads', file.filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found on server' });
+    }
+    res.download(filePath, file.originalName);
+  } catch (err) {
+    console.error('Error in share download:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });

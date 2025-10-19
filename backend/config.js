@@ -1,5 +1,5 @@
 module.exports = {
-  mongoURI: process.env.MONGO_URI || 'mongodb://localhost:27017/student-file-sharing',
+  mongoURI: process.env.MONGO_URI || 'mongodb+srv://Sreeram:8977012479%40Sree@cluster0.z824tc0.mongodb.net/student-file-sharing?retryWrites=true&w=majority&appName=Cluster0',
   jwtSecret: process.env.JWT_SECRET || 'your_jwt_secret_key',
   fileUploadLimit: 50 * 1024 * 1024, // 50MB
   allowedFileTypes: [

@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
 
 // Helper function to get auth token
 const getAuthToken = () => localStorage.getItem('token');
@@ -19,20 +19,38 @@ const authRequest = async (url, options = {}) => {
 // Auth API
 export const authAPI = {
   login: async (email, password) => {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    return response.json();
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+      return data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   },
   register: async (email, password, role = 'user') => {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, role }),
-    });
-    return response.json();
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, role }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+      return data;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
   },
 };
 
@@ -65,6 +83,16 @@ export const filesAPI = {
         Authorization: `Bearer ${token}`,
       },
     });
+  },
+  shareFile: async (id) => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/files/${id}/share`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.json();
   },
 };
 

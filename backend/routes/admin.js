@@ -4,6 +4,7 @@ const roleMiddleware = require('../middleware/roleMiddleware');
 const User = require('../models/User');
 const File = require('../models/File');
 const fs = require('fs');
+const fsPromises = fs.promises;
 const path = require('path');
 
 const router = express.Router();
@@ -52,12 +53,13 @@ router.delete('/files/:id', adminOnly, async (req, res) => {
     }
     // Delete file from uploads folder
     const filePath = path.join(__dirname, '..', 'uploads', file.filename);
-    fs.unlink(filePath, (err) => {
-      if (err) {
-        console.error('Error deleting file from disk:', err);
-      }
-    });
-    await file.remove();
+    try {
+      await fsPromises.unlink(filePath);
+    } catch (err) {
+      console.error('Error deleting file from disk:', err);
+      // Continue to delete from DB even if file deletion fails
+    }
+    await file.deleteOne();
     res.json({ message: 'File deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });

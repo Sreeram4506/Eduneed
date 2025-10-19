@@ -39,6 +39,10 @@ const FileSchema = new mongoose.Schema({
   downloadCount: {
     type: Number,
     default: 0
+  },
+  shareToken: {
+    type: String,
+    default: null
   }
 });
 
